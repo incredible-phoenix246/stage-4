@@ -33,7 +33,8 @@ import { GoogleSignIn } from "../socialbuttons";
 const SignUp = () => {
   const [isLoading, startTransition] = useTransition();
   const router = useRouter();
-  let token = "";
+  const [token, setToken] = useState("");
+
   const [otp, setOtp] = useState("");
   const form = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
@@ -52,7 +53,7 @@ const SignUp = () => {
       await CreateUser(values).then(async (data) => {
         if (data.status === 201) {
           setOpen(true);
-          token = data.access_token;
+          setToken(data.access_token);
         }
 
         toast({
@@ -71,7 +72,7 @@ const SignUp = () => {
     startTransition(async () => {
       const value = { otp };
       await Otp(value, token).then(async (data) => {
-        if (data.status === 201) {
+        if (data.status === 200) {
           setOpen(false);
           router.push("/login");
         }

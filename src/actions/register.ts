@@ -19,6 +19,7 @@ export const CreateUser = async (values: z.infer<typeof RegisterSchema>) => {
   try {
     const res = await $http.post("/auth/register", validatedFields.data);
     return {
+      status: res.status,
       user: res.data.newUser,
       access_token: res.data.access_token,
     };
@@ -31,9 +32,9 @@ export const CreateUser = async (values: z.infer<typeof RegisterSchema>) => {
 };
 
 export const Otp = async (values: z.infer<typeof OtpSchema>, token: string) => {
-  const otp = values;
+  const otp = values.otp;
 
-  const userdata = { otp: Number(otp), token };
+  const userdata = { otp: Number(otp), token: token };
 
   try {
     const res = await $http.post("/auth/verify-otp", userdata);

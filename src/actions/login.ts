@@ -17,8 +17,9 @@ export const loginUser = async (values: z.infer<typeof LoginSchema>) => {
     };
   }
   try {
-    const res = await $http.post("/user/login", validatedFields.data);
+    const res = await $http.post("/auth/login", validatedFields.data);
     return {
+      status: res.status,
       user: res.data.user,
       access_token: res.data.access_token,
     };
