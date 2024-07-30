@@ -73,12 +73,6 @@ const LoginPage = () => {
           description: data.status === 200 ? "routing now" : data.error,
         });
       });
-      updateUser({ email: values.email, name: values.email.split("@")[0] });
-      if (callback_url) {
-        router.push(callback_url);
-      } else {
-        router.push("/");
-      }
     });
   };
 
