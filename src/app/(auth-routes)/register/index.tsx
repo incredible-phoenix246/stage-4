@@ -1,13 +1,15 @@
+/* eslint-disable unicorn/prevent-abbreviations */
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogContent, DialogTitle } from "@radix-ui/react-dialog";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { CreateUser } from "~/actions/register";
+import { CreateUser, Otp } from "~/actions/register";
 import { DialogDemo } from "~/components/common/Dialog";
 import { Button } from "~/components/ui/button";
 import {
@@ -30,7 +32,9 @@ import { GoogleSignIn } from "../socialbuttons";
 
 const SignUp = () => {
   const [isLoading, startTransition] = useTransition();
+  const router = useRouter();
   let token = "";
+  const [otp, setOtp] = useState("");
   const form = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
     defaultValues: {
@@ -57,6 +61,25 @@ const SignUp = () => {
               ? "Check your email for otp"
               : "an error occurred",
           description: data.status === 201 ? "Verify email" : data.error,
+        });
+      });
+    });
+  };
+
+  const onSubmitOtp = async (e?: React.FormEvent<HTMLFormElement>) => {
+    e?.preventDefault?.();
+    startTransition(async () => {
+      const value = { otp };
+      await Otp(value, token).then(async (data) => {
+        if (data.status === 201) {
+          setOpen(false);
+          router.push("/login");
+        }
+
+        toast({
+          title: data.status === 200 ? "Email verified" : "an error occurred",
+          description:
+            data.status === 200 ? "verified sucessfull" : data.message,
         });
       });
     });
@@ -144,7 +167,7 @@ const SignUp = () => {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={isLoading}>
               Create Account
             </Button>
             <DialogDemo open={open} onOpenChanged={setOpen}>
@@ -168,7 +191,13 @@ const SignUp = () => {
                 <p className="text-xs">
                   Please paste (or type) your 6-digit code:{" "}
                 </p>
-                <InputOTP maxLength={6}>
+                <InputOTP
+                  maxLength={6}
+                  onComplete={onSubmitOtp}
+                  value={otp}
+                  onChange={setOtp}
+                  disabled={isLoading}
+                >
                   {...[0, 1, 2, 3, 4, 5].map((number_) => (
                     <InputOTPGroup key={number_}>
                       <InputOTPSlot index={number_} />

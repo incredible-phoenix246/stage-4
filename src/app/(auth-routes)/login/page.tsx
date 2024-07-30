@@ -5,7 +5,6 @@ import { Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next-nprogress-bar";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -23,7 +22,6 @@ import {
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
 import { useToast } from "~/components/ui/use-toast";
-import { useUser } from "~/hooks/user/use-user";
 import { LoginSchema } from "~/schemas";
 import { GoogleSignIn } from "../socialbuttons";
 
@@ -42,10 +40,10 @@ const getInputClassName = (hasError: boolean, isValid: boolean) => {
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
-  const searchP = useSearchParams();
-  const callback_url = searchP.get("callbackUrl");
+  // const searchP = useSearchParams();
+  // const callback_url = searchP.get("callbackUrl");
   const [isLoading, startTransition] = useTransition();
-  const { updateUser } = useUser();
+  // const { updateUser } = useUser();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof LoginSchema>>({
