@@ -23,5 +23,5 @@ export const LoginSchema = z.object({
 });
 
 export const OtpSchema = z.object({
-  otp: z.string(),
+  otp: z.number(),
 });
