@@ -22,6 +22,7 @@ import {
   FormMessage,
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
+import { useToast } from "~/components/ui/use-toast";
 import { useUser } from "~/hooks/user/use-user";
 import { LoginSchema } from "~/schemas";
 import { GoogleSignIn } from "../socialbuttons";
@@ -45,6 +46,7 @@ const LoginPage = () => {
   const callback_url = searchP.get("callbackUrl");
   const [isLoading, startTransition] = useTransition();
   const { updateUser } = useUser();
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
@@ -66,6 +68,10 @@ const LoginPage = () => {
           });
         }
         router.push("/dashboard");
+        toast({
+          title: data.status === 200 ? "login success" : "an error occurred",
+          description: data.status === 200 ? "routing now" : data.error,
+        });
       });
       updateUser({ email: values.email, name: values.email.split("@")[0] });
       if (callback_url) {

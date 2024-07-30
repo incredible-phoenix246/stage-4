@@ -3,10 +3,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogContent, DialogTitle } from "@radix-ui/react-dialog";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { CreateUser } from "~/actions/register";
 import { DialogDemo } from "~/components/common/Dialog";
 import { Button } from "~/components/ui/button";
 import {
@@ -23,38 +24,42 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "~/components/ui/input-otp";
+import { useToast } from "~/components/ui/use-toast";
+import { RegisterSchema } from "~/schemas";
 import { GoogleSignIn } from "../socialbuttons";
 
-const formSchema = z.object({
-  fullname: z.string().min(2, {
-    message: "Fullname must be at least 2 characters.",
-  }),
-  email: z.string().min(2, {
-    message: "Email must be at least 2 characters.",
-  }),
-  password: z.string().min(2, {
-    message: "Password must be at least 2 characters.",
-  }),
-});
-
-type FormData = z.infer<typeof formSchema>;
-
 const SignUp = () => {
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+  const [isLoading, startTransition] = useTransition();
+  let token = "";
+  const form = useForm<z.infer<typeof RegisterSchema>>({
+    resolver: zodResolver(RegisterSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      first_name: "",
+      last_name: "",
+    },
   });
   const [open, setOpen] = useState(false);
+  const { toast } = useToast();
 
-  const handleFormSubmit = () => {
-    form.handleSubmit(() => {
-      if (form.formState.isValid) {
-        setOpen(true);
-      }
-    })();
-  };
+  const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
+    startTransition(async () => {
+      await CreateUser(values).then(async (data) => {
+        if (data.status === 201) {
+          setOpen(true);
+          token = data.access_token;
+        }
 
-  const handleSubmit = () => {
-    form.handleSubmit(handleFormSubmit)();
+        toast({
+          title:
+            data.status === 201
+              ? "Check your email for otp"
+              : "an error occurred",
+          description: data.status === 201 ? "Verify email" : data.error,
+        });
+      });
+    });
   };
 
   return (
@@ -66,51 +71,35 @@ const SignUp = () => {
         </p>
       </div>
       <div className="flex flex-col justify-center space-y-4 sm:flex-row sm:space-x-6 sm:space-y-0">
-        {/* <Button className="flex items-center rounded-md border border-gray-300 bg-white px-4 py-4 text-gray-700 shadow-sm hover:bg-gray-50">
-          <Image
-            src="/images/google.svg"
-            width={20}
-            height={20}
-            alt="Goggle"
-            className="mr-2"
-          />
-          Sign in with Google
-        </Button> */}
-        {/* <Button className="flex items-center rounded-md border border-gray-300 bg-white p-4 px-4 text-gray-700 shadow-sm hover:bg-gray-50">
-          <Image
-            src="/images/facebook.svg"
-            width={20}
-            height={20}
-            alt="Facebook"
-            className="mr-2"
-          />
-          Sign in with Google
-        </Button> */}
         <GoogleSignIn />
       </div>
       <div className="mx-auto py-4 md:w-2/4">
         <Form {...form}>
-          <form
-            className="space-y-8"
-            onSubmit={(event) => {
-              event.preventDefault();
-              handleSubmit();
-            }}
-          >
+          <form className="space-y-8" onSubmit={form.handleSubmit(onSubmit)}>
             <FormField
               control={form.control}
-              name="fullname"
+              name="first_name"
               render={({ field }) => (
                 <FormItem className="flex flex-col gap-4">
                   <div className="flex flex-col gap-2">
-                    <FormLabel>Fullname</FormLabel>
+                    <FormLabel>First name</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Enter your fullname"
-                        {...field}
-                        value={field.value || ""}
-                        onChange={field.onChange}
-                      />
+                      <Input placeholder="Enter your first name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </div>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="last_name"
+              render={({ field }) => (
+                <FormItem className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
+                    <FormLabel>last name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your Last name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </div>
@@ -128,8 +117,7 @@ const SignUp = () => {
                       <Input
                         placeholder="Enter your email address"
                         {...field}
-                        value={field.value || ""}
-                        onChange={field.onChange}
+                        type="email"
                       />
                     </FormControl>
                     <FormMessage />
@@ -149,8 +137,6 @@ const SignUp = () => {
                         placeholder="Enter your password"
                         type="password"
                         {...field}
-                        value={field.value || ""}
-                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormMessage />
@@ -158,7 +144,7 @@ const SignUp = () => {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" onClick={handleSubmit}>
+            <Button type="submit" className="w-full">
               Create Account
             </Button>
             <DialogDemo open={open} onOpenChanged={setOpen}>
