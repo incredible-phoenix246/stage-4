@@ -1,7 +1,11 @@
+/* eslint-disable unicorn/prevent-abbreviations */
 import { NextAuthConfig } from "next-auth";
+import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 
 import { GOOGLE_SIGN_IN } from "./actions/google";
+import { nextlogin } from "./actions/login";
+import { LoginSchema } from "./schemas";
 
 export default {
   providers: [
@@ -16,6 +20,23 @@ export default {
         },
       },
     }),
+    Credentials({
+      async authorize(credentials) {
+        const validatedFields = LoginSchema.safeParse(credentials);
+        if (!validatedFields.success) {
+          return;
+        }
+        const { email, password } = validatedFields.data;
+        const res = await nextlogin({ email, password });
+
+        if (!res.user) {
+          return;
+        }
+        const user = res.user;
+
+        return user;
+      },
+    }),
   ],
   callbacks: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -26,7 +47,7 @@ export default {
       if (account && account.provider !== "google") {
         return { ...token, ...user };
       }
-      // eslint-disable-next-line unicorn/prevent-abbreviations
+
       const res = await GOOGLE_SIGN_IN(account);
 
       const use = res.user;

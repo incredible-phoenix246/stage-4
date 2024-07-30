@@ -11,7 +11,7 @@ export const CreateUser = async (values: z.infer<typeof RegisterSchema>) => {
   const validatedFields = RegisterSchema.safeParse(values);
   if (!validatedFields.success) {
     return {
-      error: "Login Failed. Please check your email and password.",
+      error: "registration  Failed. Please check your email and password.",
     };
   }
   try {

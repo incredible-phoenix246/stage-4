@@ -2,8 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next-nprogress-bar";
-import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
@@ -13,7 +13,6 @@ import * as z from "zod";
 import { loginUser } from "~/actions/login";
 import LoadingSpinner from "~/components/miscellaneous/loading-spinner";
 import { Button } from "~/components/ui/button";
-import { Checkbox } from "~/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -24,19 +23,8 @@ import {
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
 import { useUser } from "~/hooks/user/use-user";
-import { simulateDelay } from "~/lib/utils";
-import Facebook from "../../../../public/images/facebook.svg";
-import Google from "../../../../public/images/google.svg";
-
-const loginSchema = z.object({
-  email: z.string().email({ message: "Invalid email format" }),
-  password: z
-    .string()
-    .min(6, { message: "Password must be at least 6 characters long" }),
-  rememberMe: z.boolean().default(false),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+import { LoginSchema } from "~/schemas";
+import { GoogleSignIn } from "../socialbuttons";
 
 const getInputClassName = (hasError: boolean, isValid: boolean) => {
   const baseClasses =
@@ -58,20 +46,27 @@ const LoginPage = () => {
   const [isLoading, startTransition] = useTransition();
   const { updateUser } = useUser();
 
-  const form = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    mode: "onChange",
+  const form = useForm<z.infer<typeof LoginSchema>>({
+    resolver: zodResolver(LoginSchema),
     defaultValues: {
       email: "",
       password: "",
-      rememberMe: false,
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof loginSchema>) => {
+  const onSubmit = async (values: z.infer<typeof LoginSchema>) => {
     startTransition(async () => {
-      await simulateDelay(3);
-      await loginUser(values);
+      await loginUser(values).then(async (data) => {
+        const { email, password } = values;
+        if (data.status === 200) {
+          await signIn("credentials", {
+            email,
+            password,
+            redirect: false,
+          });
+        }
+        router.push("/dashboard");
+      });
       updateUser({ email: values.email, name: values.email.split("@")[0] });
       if (callback_url) {
         router.push(callback_url);
@@ -100,26 +95,7 @@ const LoginPage = () => {
         </div>
 
         <div className="flex flex-col justify-center space-y-4 sm:flex-row sm:space-x-6 sm:space-y-0">
-          <Button className="flex items-center rounded-md border border-gray-300 bg-white px-4 py-4 text-gray-700 shadow-sm hover:bg-gray-50">
-            <Image
-              src={Google}
-              width={20}
-              height={20}
-              alt="Goggle"
-              className="mr-2"
-            />
-            Sign in with Google
-          </Button>
-          <Button className="flex items-center rounded-md border border-gray-300 bg-white px-4 py-4 text-gray-700 shadow-sm hover:bg-gray-50">
-            <Image
-              src={Facebook}
-              width={20}
-              height={20}
-              alt="Facebook"
-              className="mr-2"
-            />
-            Sign in with Google
-          </Button>
+          <GoogleSignIn />
         </div>
 
         <div className="flex items-center justify-center">
@@ -200,33 +176,7 @@ const LoginPage = () => {
                 </FormItem>
               )}
             />
-            <div className="flex items-center justify-between">
-              <FormField
-                control={form.control}
-                name="rememberMe"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Remember me</FormLabel>
-                    </div>
-                  </FormItem>
-                )}
-              />
-              <div className="text-sm">
-                <Link
-                  href="/forgot-password"
-                  className="text-neutralColor-dark-2 text-sm font-medium"
-                >
-                  Forgot Password?
-                </Link>
-              </div>
-            </div>
+
             <Button
               type="submit"
               variant="default"
